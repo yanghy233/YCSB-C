@@ -53,8 +53,35 @@ int main(const int argc, const char *argv[]) {
   wl.Init(props);
 
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
+  const int num_stages = stoi(props.GetProperty("stagecount","1"));
 
   // Loads data
+  vector<future<int>> actual_ops;
+  int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
+  utils::Timer<double> timer;
+  for (int stage = 0; stage < num_stages; ++stage) {
+    actual_ops.clear();
+    timer.Start();
+    for (int i = 0; i < num_threads; ++i) {
+      actual_ops.emplace_back(async(launch::async,
+          DelegateClient, db, &wl, total_ops / num_threads / num_stages, true));
+    }
+    assert((int)actual_ops.size() == num_threads);
+
+    int sum = 0;
+    for (auto &n : actual_ops) {
+      assert(n.valid());
+      sum += n.get();
+    }
+    double duration = timer.End();
+    while(total_ops / 1000.0 / num_threads / num_stages / duration > 40)
+      duration = timer.End();
+    cout << "# Loading records:\t" << sum << " for stage:\t" << stage << " in " << duration*1000 << " ms" <<  endl;
+    cerr << total_ops / num_threads / num_stages << '\t' << duration*1000 << '\t' << total_ops / 1000.0 / num_threads / num_stages / duration << endl;
+  }
+
+
+  /* // Loads data
   vector<future<int>> actual_ops;
   int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
   for (int i = 0; i < num_threads; ++i) {
@@ -89,7 +116,7 @@ int main(const int argc, const char *argv[]) {
   double duration = timer.End();
   cerr << "# Transaction throughput (KTPS)" << endl;
   cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
-  cerr << total_ops / duration / 1000 << endl;
+  cerr << total_ops / duration / 1000 << endl; */
 }
 
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
@@ -103,6 +130,14 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) 
         exit(0);
       }
       props.SetProperty("threadcount", argv[argindex]);
+      argindex++;
+    } else if (strcmp(argv[argindex],"-stages") == 0) {
+      argindex++;
+      if(argindex>=argc) {
+        UsageMessage(argv[0]);
+        exit(0);
+      }
+      props.SetProperty("stagecount",argv[argindex]);
       argindex++;
     } else if (strcmp(argv[argindex], "-db") == 0) {
       argindex++;
@@ -170,6 +205,7 @@ void UsageMessage(const char *command) {
   cout << "Usage: " << command << " [options]" << endl;
   cout << "Options:" << endl;
   cout << "  -threads n: execute using n threads (default: 1)" << endl;
+  cout << "  -stages  m: execute with m stages (default: 1)" <<endl;
   cout << "  -db dbname: specify the name of the DB to use (default: basic)" << endl;
   cout << "  -P propertyfile: load properties from the given file. Multiple files can" << endl;
   cout << "                   be specified, and will be processed in the order specified" << endl;
@@ -178,4 +214,3 @@ void UsageMessage(const char *command) {
 inline bool StrStartWith(const char *str, const char *pre) {
   return strncmp(str, pre, strlen(pre)) == 0;
 }
-

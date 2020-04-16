@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-std=c++11 -g -Wall -pthread -I./
-LDFLAGS= -lpthread -ltbb -lhiredis
+LDFLAGS= -lpthread -ltbb -lhiredis -lrocksdb -ldl
 SUBDIRS=core db redis
 SUBSRCS=$(wildcard core/*.cc) $(wildcard db/*.cc)
 OBJECTS=$(SUBSRCS:.cc=.o)
@@ -19,6 +19,6 @@ clean:
 		$(MAKE) -C $$dir $@; \
 	done
 	$(RM) $(EXEC)
+	-rm -rf rocksdb_test
 
 .PHONY: $(SUBDIRS) $(EXEC)
-

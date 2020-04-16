@@ -11,4 +11,3 @@ all: $(SOURCES) $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS)
-

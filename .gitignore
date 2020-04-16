@@ -39,3 +39,8 @@
 
 redis/sample
 ycsbc
+
+# Specific
+.vscode/
+rocksdb_test/
+result.txt
