@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -g -Wall -pthread -I./
+CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../rocksdb
 LDFLAGS= -lpthread -ltbb -lhiredis -lrocksdb -ldl
 SUBDIRS=core db redis
 SUBSRCS=$(wildcard core/*.cc) $(wildcard db/*.cc)

@@ -15,7 +15,6 @@ static std::vector<ColumnFamilyDescriptor> column_families;
 RocksDB::RocksDB()
     {
     Options options;
-    options.max_background_jobs=1;
     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
