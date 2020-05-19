@@ -11,6 +11,8 @@
 #include <iostream>
 #include <vector>
 #include <future>
+#include <algorithm>
+#include <unistd.h>
 #include "core/utils.h"
 #include "core/timer.h"
 #include "core/client.h"
@@ -23,17 +25,49 @@ void UsageMessage(const char *command);
 bool StrStartWith(const char *str, const char *pre);
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
-    bool is_loading) {
+// int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int num_ops,
+//     bool is_loading) {
+//   db->Init();
+//   ycsbc::Client client(*db, *wl);
+//   int oks = 0;
+//   for (int i = 0; i < num_ops; ++i) {
+//     if (is_loading) {
+//       oks += client.DoInsert();
+//     } else {
+//       oks += client.DoTransaction();
+//     }
+//   }
+//   db->Close();
+//   return oks;
+// }
+
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, double* tail_latency) {
   db->Init();
   ycsbc::Client client(*db, *wl);
   int oks = 0;
-  for (int i = 0; i < num_ops; ++i) {
-    if (is_loading) {
-      oks += client.DoInsert();
-    } else {
-      oks += client.DoTransaction();
+  if (load_ops) {
+    for (int i = 0; i < load_ops; ++i) {
+          oks += client.DoInsert();
+        }
+  } else {
+    utils::Timer<double> timer;
+    vector<double> latency;
+    double last_time = 0;
+    while (last_time < 100) {
+      timer.Start();
+      int ok = client.DoTransaction();
+      double t = timer.End();
+      oks += ok;
+      // while(t < 0.02) {
+      //   usleep((0.02 - t) * 1000);
+      //   t = timer.End();
+      // }
+      if (ok) latency.push_back(t);
+      last_time += t;
     }
+    sort(latency.begin(), latency.end());
+    int pos = latency.size()*0.99;
+    *tail_latency = latency[pos];
   }
   db->Close();
   return oks;
@@ -53,40 +87,13 @@ int main(const int argc, const char *argv[]) {
   wl.Init(props);
 
   const int num_threads = stoi(props.GetProperty("threadcount", "1"));
-  const int num_stages = stoi(props.GetProperty("stagecount","1"));
 
   // Loads data
   vector<future<int>> actual_ops;
   int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
-  utils::Timer<double> timer;
-  for (int stage = 0; stage < num_stages; ++stage) {
-    actual_ops.clear();
-    timer.Start();
-    for (int i = 0; i < num_threads; ++i) {
-      actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, total_ops / num_threads / num_stages, true));
-    }
-    assert((int)actual_ops.size() == num_threads);
-
-    int sum = 0;
-    for (auto &n : actual_ops) {
-      assert(n.valid());
-      sum += n.get();
-    }
-    double duration = timer.End();
-    while(total_ops / 1000.0 / num_threads / num_stages / duration > 40)
-      duration = timer.End();
-    cout << "# Loading records:\t" << sum << " for stage:\t" << stage << " in " << duration*1000 << " ms" <<  endl;
-    cerr << total_ops / num_threads / num_stages << '\t' << duration*1000 << '\t' << total_ops / 1000.0 / num_threads / num_stages / duration << endl;
-  }
-
-
-  /* // Loads data
-  vector<future<int>> actual_ops;
-  int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
   for (int i = 0; i < num_threads; ++i) {
     actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, true));
+        DelegateClient, db, &wl, total_ops / num_threads, nullptr));
   }
   assert((int)actual_ops.size() == num_threads);
 
@@ -95,28 +102,32 @@ int main(const int argc, const char *argv[]) {
     assert(n.valid());
     sum += n.get();
   }
-  cerr << "# Loading records:\t" << sum << endl;
+  cout << "# Loading records:\t" << sum << endl;
+
+  usleep(10000000);
 
   // Peforms transactions
-  actual_ops.clear();
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
-  utils::Timer<double> timer;
-  timer.Start();
-  for (int i = 0; i < num_threads; ++i) {
-    actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, false));
-  }
-  assert((int)actual_ops.size() == num_threads);
-
+  vector<double> tail_latency(num_threads);
   sum = 0;
-  for (auto &n : actual_ops) {
-    assert(n.valid());
-    sum += n.get();
+  while( sum < total_ops ) {
+    actual_ops.clear();
+    for (int i = 0; i < num_threads; ++i) {
+      actual_ops.emplace_back(async(launch::async,
+          DelegateClient, db, &wl, 0, &tail_latency[i]));
+    }
+    assert((int)actual_ops.size() == num_threads);
+
+    for (int i = 0; i < num_threads; ++i) {
+      assert(actual_ops[i].valid());
+      int ops = actual_ops[i].get();
+      sum += ops;
+      cout << "# Doing transactions:\tsum: " << sum << "\tops: " << ops << "\ttail_latency: " << tail_latency[i] << " ms" << endl;
+      cerr << ops << '\t' << tail_latency[i] << endl;
+    }
   }
-  double duration = timer.End();
-  cerr << "# Transaction throughput (KTPS)" << endl;
-  cerr << props["dbname"] << '\t' << file_name << '\t' << num_threads << '\t';
-  cerr << total_ops / duration / 1000 << endl; */
+
+  return 0;
 }
 
 string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
@@ -130,14 +141,6 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) 
         exit(0);
       }
       props.SetProperty("threadcount", argv[argindex]);
-      argindex++;
-    } else if (strcmp(argv[argindex],"-stages") == 0) {
-      argindex++;
-      if(argindex>=argc) {
-        UsageMessage(argv[0]);
-        exit(0);
-      }
-      props.SetProperty("stagecount",argv[argindex]);
       argindex++;
     } else if (strcmp(argv[argindex], "-db") == 0) {
       argindex++;
@@ -205,7 +208,6 @@ void UsageMessage(const char *command) {
   cout << "Usage: " << command << " [options]" << endl;
   cout << "Options:" << endl;
   cout << "  -threads n: execute using n threads (default: 1)" << endl;
-  cout << "  -stages  m: execute with m stages (default: 1)" <<endl;
   cout << "  -db dbname: specify the name of the DB to use (default: basic)" << endl;
   cout << "  -P propertyfile: load properties from the given file. Multiple files can" << endl;
   cout << "                   be specified, and will be processed in the order specified" << endl;

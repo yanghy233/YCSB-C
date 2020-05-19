@@ -29,7 +29,7 @@ class Timer {
 
  private:
   typedef std::chrono::high_resolution_clock Clock;
-  typedef std::chrono::duration<T> Duration;
+  typedef std::chrono::duration<T, std::milli> Duration;
 
   Clock::time_point time_;
 };
@@ -37,4 +37,3 @@ class Timer {
 } // utils
 
 #endif // YCSB_C_TIMER_H_
-

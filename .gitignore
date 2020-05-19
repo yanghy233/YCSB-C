@@ -36,6 +36,7 @@
 *.log
 *.data
 *.output
+*.txt
 
 redis/sample
 ycsbc
