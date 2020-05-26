@@ -17,7 +17,7 @@ all: $(SOURCES) $(OBJECTS)
 $(SILKOBJECT):
 	$(CC) $(CFLAGS) $(INCLUDES) $(SILKSOURCES) -o $@
 
-silk: $(SOURCES) $(filter-out $(OBJECTS), $(SILKOBJECT))
+silk: $(SOURCES) $(filter-out $(SILKOBJECT), $(OBJECTS))
 	$(CC) $(CFLAGS) $(SILKINCLUDES) $(SILKSOURCES) -o $(SILKOBJECT)
 
 clean:

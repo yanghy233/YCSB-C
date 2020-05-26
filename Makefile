@@ -20,7 +20,7 @@ $(EXEC): $(wildcard *.cc) $(OBJECTS)
 ORIGINEXEC: $(wildcard *.cc) $(OBJECTS)
 	$(CC) $(CFLAGS) $^ $(ORIGINFLAGS) -o $(EXEC)
 
-SILKDIR: $(filter-out $(SUBDIRS), $(SILKDIRS))
+SILKDIR:
 	for dir in $(SILKDIRS); do \
 		$(MAKE) -C $$dir silk; \
 	done
@@ -30,7 +30,7 @@ SILKEXEC: $(wildcard *.cc) $(OBJECTS)
 
 origin: $(SUBDIRS) ORIGINEXEC
 
-silk: SILKDIR SILKEXEC
+silk: SILKDIR $(filter-out $(SILKDIRS), $(SUBDIRS)) SILKEXEC
 
 clean:
 	for dir in $(SUBDIRS); do \
