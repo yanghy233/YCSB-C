@@ -18,7 +18,7 @@ $(SILKOBJECTS):
 
 silk: $(SOURCES) $(filter-out $(SILKOBJECTS), $(OBJECTS))
 	$(foreach obj, $(SILKOBJECTS), \
-	$(CC) $(CFLAGS) $(SILKINCLUDES) $(obj:.o=.cc) -o $(obj); \
+	$(CC) $(CFLAGS) $(SILKINCLUDES) $(obj:.o=.cc) -o $(obj) -DSILK; \
 	)
 
 clean:

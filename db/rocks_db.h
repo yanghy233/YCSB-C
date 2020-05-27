@@ -13,6 +13,7 @@
 #include "rocksdb/options.h"
 #include "rocksdb/slice.h"
 #include "rocksdb/iterator.h"
+#include "rocksdb/rate_limiter.h"
 #include <unordered_map>
 #include <string>
 

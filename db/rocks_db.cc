@@ -15,6 +15,9 @@ static std::vector<ColumnFamilyDescriptor> column_families;
 RocksDB::RocksDB()
     {
     Options options;
+#ifndef SILK
+    options.rate_limiter.reset(NewGenericRateLimiter(20<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
+#endif
     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
