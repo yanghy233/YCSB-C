@@ -6,21 +6,22 @@ SOURCES=$(wildcard *.cc)
 OBJECTS=$(SOURCES:.cc=.o)
 
 SILKINCLUDES=-I../ -I../../SILK/include/
-SILKSOURCES=rocks_db.cc
-SILKOBJECT=rocks_db.o
+SILKOBJECTS=rocks_db.o db_factory.o
 
 all: $(SOURCES) $(OBJECTS)
 
 .cc.o:
 	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
-$(SILKOBJECT):
-	$(CC) $(CFLAGS) $(INCLUDES) $(SILKSOURCES) -o $@
+$(SILKOBJECTS):
+	$(CC) $(CFLAGS) $(INCLUDES) $(@:.o=.cc) -o $@
 
-silk: $(SOURCES) $(filter-out $(SILKOBJECT), $(OBJECTS))
-	$(CC) $(CFLAGS) $(SILKINCLUDES) $(SILKSOURCES) -o $(SILKOBJECT)
+silk: $(SOURCES) $(filter-out $(SILKOBJECTS), $(OBJECTS))
+	$(foreach obj, $(SILKOBJECTS), \
+	$(CC) $(CFLAGS) $(SILKINCLUDES) $(obj:.o=.cc) -o $(obj); \
+	)
 
 clean:
 	$(RM) $(OBJECTS)
 
-.PHONY: $(SILKOBJECT) silk clean
+.PHONY: $(SILKOBJECTS) silk clean
