@@ -53,15 +53,11 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, d
     utils::Timer<double> timer;
     vector<double> latency;
     double last_time = 0;
-    while (last_time < 100) {
+    while (last_time < 1000) {
       timer.Start();
       int ok = client.DoTransaction();
       double t = timer.End();
       oks += ok;
-      // while(t < 0.02) {
-      //   usleep((0.02 - t) * 1000);
-      //   t = timer.End();
-      // }
       if (ok) latency.push_back(t);
       last_time += t;
     }
