@@ -96,24 +96,31 @@ int RocksDB::Scan(const std::string &table, const std::string &key,int record_co
 
 int RocksDB::Update(const std::string &table,const std::string &key,std::vector<KVPair> &values)
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
-        ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
-        assert(s.ok());
-        handles[table]=cf;
+        return Status::kNotFound;
         }
     ColumnFamilyHandle* cf=handles[table];
-    std::string oldvalues;
-    Status s=db->Get(ReadOptions(),cf,Slice(key),&oldvalues);
-    if(!s.ok())return s.code();
-    std::vector<KVPair> result;
-    deserializeValues(oldvalues, NULL, result);
-    updateValues(result,values);
-    s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(result)));
+    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
     return s.code();
+    // Options options;
+    // options.max_write_buffer_number = 20;
+    // if(handles.find(table)==handles.end())
+    //     {
+    //     ColumnFamilyHandle* cf;
+    //     Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
+    //     assert(s.ok());
+    //     handles[table]=cf;
+    //     }
+    // ColumnFamilyHandle* cf=handles[table];
+    // std::string oldvalues;
+    // Status s=db->Get(ReadOptions(),cf,Slice(key),&oldvalues);
+    // if(!s.ok())return s.code();
+    // std::vector<KVPair> result;
+    // deserializeValues(oldvalues, NULL, result);
+    // updateValues(result,values);
+    // s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(result)));
+    // return s.code();
     }
 
 int RocksDB::Insert(const std::string &table, const std::string &key,std::vector<KVPair> &values)
@@ -165,17 +172,17 @@ void RocksDB::deserializeValues(const std::string &values,const std::vector<std:
     return;
     }
 
-void RocksDB::updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values)
-    {
-    for(unsigned i=0;i<result.size();++i)
-        for(unsigned j=0;j<values.size();++j)
-            if(result[i].first==values[j].first)
-                {
-                result[i].second=values[j].second;
-                break;
-                }
-    return;
-    }
+// void RocksDB::updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values)
+//     {
+//     for(unsigned i=0;i<result.size();++i)
+//         for(unsigned j=0;j<values.size();++j)
+//             if(result[i].first==values[j].first)
+//                 {
+//                 result[i].second=values[j].second;
+//                 break;
+//                 }
+//     return;
+//     }
 
 std::string RocksDB::serializeValues(const std::vector<KVPair> &values)
     {
