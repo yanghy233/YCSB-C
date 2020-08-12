@@ -100,7 +100,7 @@ int main(const int argc, const char *argv[]) {
   }
   cout << "# Loading records:\t" << sum << endl;
 
-  sleep(10);
+  sleep(60);
 
   // Peforms transactions
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);

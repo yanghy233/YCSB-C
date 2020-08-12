@@ -16,8 +16,9 @@ RocksDB::RocksDB()
     {
     Options options;
 #ifndef SILK
-    options.rate_limiter.reset(NewGenericRateLimiter(20<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
+    options.rate_limiter.reset(NewGenericRateLimiter(400<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
 #endif
+    options.max_write_buffer_number = 20;
     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
@@ -36,11 +37,13 @@ RocksDB::RocksDB()
 
 RocksDB::~RocksDB()
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     column_families.clear();
-    column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+    column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions(options));
     for(const auto &handle : handles)
         {
-        column_families.emplace_back(handle.first,ColumnFamilyOptions());
+        column_families.emplace_back(handle.first,ColumnFamilyOptions(options));
         delete handle.second;
         }
     delete db;
@@ -48,10 +51,12 @@ RocksDB::~RocksDB()
 
 int RocksDB::Read (const std::string &table,const std::string &key,const std::vector<std::string> *fields,std::vector<KVPair> &result)
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(),table, &cf);
+        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
         assert(s.ok());
         handles[table]=cf;
         }
@@ -65,10 +70,12 @@ int RocksDB::Read (const std::string &table,const std::string &key,const std::ve
 
 int RocksDB::Scan(const std::string &table, const std::string &key,int record_count, const std::vector<std::string> *fields,std::vector<std::vector<KVPair>> &result)
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(),table, &cf);
+        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
         assert(s.ok());
         handles[table]=cf;
         }
@@ -89,10 +96,12 @@ int RocksDB::Scan(const std::string &table, const std::string &key,int record_co
 
 int RocksDB::Update(const std::string &table,const std::string &key,std::vector<KVPair> &values)
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(),table, &cf);
+        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
         assert(s.ok());
         handles[table]=cf;
         }
@@ -109,10 +118,12 @@ int RocksDB::Update(const std::string &table,const std::string &key,std::vector<
 
 int RocksDB::Insert(const std::string &table, const std::string &key,std::vector<KVPair> &values)
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(),table, &cf);
+        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
         assert(s.ok());
         handles[table]=cf;
         }
@@ -123,10 +134,12 @@ int RocksDB::Insert(const std::string &table, const std::string &key,std::vector
 
 int RocksDB::Delete(const std::string &table, const std::string &key)
     {
+    Options options;
+    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(),table, &cf);
+        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
         assert(s.ok());
         handles[table]=cf;
         }
