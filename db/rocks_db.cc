@@ -14,11 +14,12 @@ static std::vector<ColumnFamilyDescriptor> column_families;
 
 RocksDB::RocksDB()
     {
-    Options options;
 #ifndef SILK
     options.rate_limiter.reset(NewGenericRateLimiter(400<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
 #endif
     options.max_write_buffer_number = 20;
+    options.min_write_buffer_number_to_merge = 5;
+    options.level0_file_num_compaction_trigger = 1;
     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
@@ -37,8 +38,6 @@ RocksDB::RocksDB()
 
 RocksDB::~RocksDB()
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     column_families.clear();
     column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions(options));
     for(const auto &handle : handles)
@@ -51,8 +50,6 @@ RocksDB::~RocksDB()
 
 int RocksDB::Read (const std::string &table,const std::string &key,const std::vector<std::string> *fields,std::vector<KVPair> &result)
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -70,8 +67,6 @@ int RocksDB::Read (const std::string &table,const std::string &key,const std::ve
 
 int RocksDB::Scan(const std::string &table, const std::string &key,int record_count, const std::vector<std::string> *fields,std::vector<std::vector<KVPair>> &result)
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -103,8 +98,6 @@ int RocksDB::Update(const std::string &table,const std::string &key,std::vector<
     ColumnFamilyHandle* cf=handles[table];
     Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
     return s.code();
-    // Options options;
-    // options.max_write_buffer_number = 20;
     // if(handles.find(table)==handles.end())
     //     {
     //     ColumnFamilyHandle* cf;
@@ -125,8 +118,6 @@ int RocksDB::Update(const std::string &table,const std::string &key,std::vector<
 
 int RocksDB::Insert(const std::string &table, const std::string &key,std::vector<KVPair> &values)
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -141,8 +132,6 @@ int RocksDB::Insert(const std::string &table, const std::string &key,std::vector
 
 int RocksDB::Delete(const std::string &table, const std::string &key)
     {
-    Options options;
-    options.max_write_buffer_number = 20;
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;

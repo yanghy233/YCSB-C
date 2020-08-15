@@ -36,6 +36,7 @@ class RocksDB : public DB {
   ~RocksDB();
  private:
   rocksdb::DB* db;
+  rocksdb::Options options;
   std::unordered_map<std::string,rocksdb::ColumnFamilyHandle*> handles;
   void deserializeValues(const std::string &values,const std::vector<std::string> *fields,std::vector<KVPair> &result);
   void updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values);
