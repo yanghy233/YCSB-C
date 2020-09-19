@@ -14,16 +14,20 @@ static std::vector<ColumnFamilyDescriptor> column_families;
 
 RocksDB::RocksDB()
     {
-#ifndef SILK
-    options.rate_limiter.reset(NewGenericRateLimiter(400<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
-#endif
-    options.max_write_buffer_number = 20;
-    options.min_write_buffer_number_to_merge = 5;
-    options.level0_file_num_compaction_trigger = 1;
+// #ifndef SILK
+//     options.rate_limiter.reset(NewGenericRateLimiter(400<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
+// #endif
+    // std::string ram_path="/home/ubuntu/ramdisk";
+    std::string disk_path="./rocksdb_test";
+    options.max_write_buffer_number = 24;
+    //options.min_write_buffer_number_to_merge = 4;
+    // options.level0_file_num_compaction_trigger = 1;
+    // options.db_paths.emplace_back(ram_path,1ull<<30);
+    // options.db_paths.emplace_back(disk_path,1ull<<40);
     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
-        Status s=rocksdb::DB::Open(options,"./rocksdb_test",column_families,&cf_handles,&db);
+        Status s=rocksdb::DB::Open(options,disk_path,column_families,&cf_handles,&db);
         assert(s.ok());
         for(unsigned i=1;i<cf_handles.size();++i)
             handles[column_families[i].name]=cf_handles[i];
@@ -31,7 +35,7 @@ RocksDB::RocksDB()
     else
         {
         options.create_if_missing=true;
-        Status s=rocksdb::DB::Open(options,"./rocksdb_test",&db);
+        Status s=rocksdb::DB::Open(options,disk_path,&db);
         assert(s.ok());
         }
     }

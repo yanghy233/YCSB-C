@@ -41,7 +41,7 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 //   return oks;
 // }
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, double* tail_latency) {
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, double *tail_latency, vector<double> *total_latency) {
   db->Init();
   ycsbc::Client client(*db, *wl);
   int oks = 0;
@@ -58,7 +58,10 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, d
       int ok = client.DoTransaction();
       double t = timer.End();
       oks += ok;
-      if (ok) latency.push_back(t);
+      if (ok) {
+        latency.push_back(t);
+        total_latency->push_back(t);
+      }
       last_time += t;
     }
     sort(latency.begin(), latency.end());
@@ -89,7 +92,7 @@ int main(const int argc, const char *argv[]) {
   int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
   for (int i = 0; i < num_threads; ++i) {
     actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, nullptr));
+        DelegateClient, db, &wl, total_ops / num_threads, nullptr,nullptr));
   }
   assert((int)actual_ops.size() == num_threads);
 
@@ -104,13 +107,17 @@ int main(const int argc, const char *argv[]) {
 
   // Peforms transactions
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
+  
+  vector<double> total_latency;
+  total_latency.reserve(total_ops);
+
   vector<double> tail_latency(num_threads);
   sum = 0;
   while( sum < total_ops ) {
     actual_ops.clear();
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, 0, &tail_latency[i]));
+          DelegateClient, db, &wl, 0, &tail_latency[i],&total_latency));
     }
     assert((int)actual_ops.size() == num_threads);
 
@@ -123,6 +130,9 @@ int main(const int argc, const char *argv[]) {
     }
   }
 
+  sort(total_latency.begin(),total_latency.end());
+  cout << "Total tail latency: " << total_latency[total_latency.size()*0.99] << endl;
+  cerr << total_latency[total_latency.size()*0.99] << endl;
   return 0;
 }
 
