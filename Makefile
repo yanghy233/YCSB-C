@@ -1,11 +1,11 @@
 CC=g++
 CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../rocksdb -L./
-LDFLAGS= -lpthread -ltbb -lhiredis -lrocksdb -ldl
-ORIGINFLAGS= -lpthread -ltbb -lhiredis -lrocksdborigin -ldl
-SILKFLAGS= -lpthread -ltbb -lhiredis -lrocksdbsilk -ldl
-SUBDIRS=core db redis
+LDFLAGS= -lpthread -lrocksdb -ldl -lz
+ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz
+SILKFLAGS= -lpthread -lrocksdbsilk -ldl -lz
+SUBDIRS=core db
 SILKDIRS=db
-SUBSRCS=$(wildcard core/*.cc) $(wildcard db/*.cc)
+SUBSRCS=$(wildcard core/*.cc) db/db_factory.cc db/rocks_db.cc
 OBJECTS=$(SUBSRCS:.cc=.o)
 EXEC=ycsbc
 
