@@ -14,7 +14,8 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/iterator.h"
 #include "rocksdb/rate_limiter.h"
-#include <unordered_map>
+// #include <unordered_map>
+// #include <mutex>
 #include <string>
 
 namespace ycsbc {
@@ -37,7 +38,9 @@ class RocksDB : public DB {
  private:
   rocksdb::DB* db;
   rocksdb::Options options;
-  std::unordered_map<std::string,rocksdb::ColumnFamilyHandle*> handles;
+  // std::unordered_map<std::string,rocksdb::ColumnFamilyHandle*> handles;
+  // std::mutex mu;
+  rocksdb::ColumnFamilyHandle* cf;
   void deserializeValues(const std::string &values,const std::vector<std::string> *fields,std::vector<KVPair> &result);
   void updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values);
   std::string serializeValues(const std::vector<KVPair> &values);

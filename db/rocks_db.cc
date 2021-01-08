@@ -24,7 +24,14 @@ RocksDB::RocksDB()
     // options.level0_file_num_compaction_trigger = 1;
     // options.db_paths.emplace_back(ram_path,1ull<<30);
     // options.db_paths.emplace_back(disk_path,1ull<<40);
-    if(column_families.size())
+
+    options.create_if_missing = true;
+    Status s=rocksdb::DB::Open(options,disk_path,&db);
+    assert(s.ok());
+
+    s = db->CreateColumnFamily(ColumnFamilyOptions(options),"usertable", &cf);
+    assert(s.ok());
+/*     if(column_families.size())
         {
         std::vector<ColumnFamilyHandle*> cf_handles;
         Status s=rocksdb::DB::Open(options,disk_path,column_families,&cf_handles,&db);
@@ -37,23 +44,25 @@ RocksDB::RocksDB()
         options.create_if_missing=true;
         Status s=rocksdb::DB::Open(options,disk_path,&db);
         assert(s.ok());
-        }
+        } */
     }
 
 RocksDB::~RocksDB()
     {
-    column_families.clear();
+/*     column_families.clear();
     column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions(options));
     for(const auto &handle : handles)
         {
         column_families.emplace_back(handle.first,ColumnFamilyOptions(options));
         delete handle.second;
-        }
+        } */
+    delete cf;
     delete db;
     }
 
 int RocksDB::Read (const std::string &table,const std::string &key,const std::vector<std::string> *fields,std::vector<KVPair> &result)
     {
+/*     mu.lock();
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -62,6 +71,7 @@ int RocksDB::Read (const std::string &table,const std::string &key,const std::ve
         handles[table]=cf;
         }
     ColumnFamilyHandle* cf=handles[table];
+    mu.unlock(); */
     std::string values;
     Status s=db->Get(ReadOptions(),cf,Slice(key),&values);
     if(!s.ok())return s.code();
@@ -71,6 +81,7 @@ int RocksDB::Read (const std::string &table,const std::string &key,const std::ve
 
 int RocksDB::Scan(const std::string &table, const std::string &key,int record_count, const std::vector<std::string> *fields,std::vector<std::vector<KVPair>> &result)
     {
+/*     mu.lock();
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -79,6 +90,7 @@ int RocksDB::Scan(const std::string &table, const std::string &key,int record_co
         handles[table]=cf;
         }
     ColumnFamilyHandle* cf=handles[table];
+    mu.unlock(); */
     Iterator*it=db->NewIterator(ReadOptions(),cf);
     int cnt=0;
     for(it->Seek(key);it->Valid()&&cnt<record_count;it->Next())
@@ -95,11 +107,14 @@ int RocksDB::Scan(const std::string &table, const std::string &key,int record_co
 
 int RocksDB::Update(const std::string &table,const std::string &key,std::vector<KVPair> &values)
     {
+/*     mu.lock();
     if(handles.find(table)==handles.end())
         {
+        mu.unlock();
         return Status::kNotFound;
         }
     ColumnFamilyHandle* cf=handles[table];
+    mu.unlock(); */
     Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
     return s.code();
     // if(handles.find(table)==handles.end())
@@ -122,6 +137,7 @@ int RocksDB::Update(const std::string &table,const std::string &key,std::vector<
 
 int RocksDB::Insert(const std::string &table, const std::string &key,std::vector<KVPair> &values)
     {
+/*     mu.lock();
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -130,12 +146,14 @@ int RocksDB::Insert(const std::string &table, const std::string &key,std::vector
         handles[table]=cf;
         }
     ColumnFamilyHandle* cf=handles[table];
+    mu.unlock(); */
     Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
     return s.code();
     }
 
 int RocksDB::Delete(const std::string &table, const std::string &key)
     {
+/*     mu.lock();
     if(handles.find(table)==handles.end())
         {
         ColumnFamilyHandle* cf;
@@ -144,6 +162,7 @@ int RocksDB::Delete(const std::string &table, const std::string &key)
         handles[table]=cf;
         }
     ColumnFamilyHandle* cf=handles[table];
+    mu.unlock(); */
     Status s=db->Delete(WriteOptions(),cf,Slice(key));
     return s.code();
     }

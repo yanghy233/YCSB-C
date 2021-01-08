@@ -10,7 +10,9 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <future>
+#include <functional>
 #include <algorithm>
 #include <unistd.h>
 #include "core/utils.h"
@@ -41,7 +43,7 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 //   return oks;
 // }
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, double *tail_latency, vector<double> *total_latency) {
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, vector<double> *tail_latency) {
   db->Init();
   ycsbc::Client client(*db, *wl);
   int oks = 0;
@@ -51,7 +53,6 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, d
         }
   } else {
     utils::Timer<double> timer;
-    vector<double> latency;
     double last_time = 0;
     while (last_time < 1000) {
       timer.Start();
@@ -59,14 +60,11 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, d
       double t = timer.End();
       oks += ok;
       if (ok) {
-        latency.push_back(t);
-        total_latency->push_back(t);
+        tail_latency->push_back(t);
       }
       last_time += t;
     }
-    sort(latency.begin(), latency.end());
-    int pos = latency.size()*0.99;
-    *tail_latency = latency[pos];
+    sort(tail_latency->begin(), tail_latency->end(), greater<double>());
   }
   db->Close();
   return oks;
@@ -92,7 +90,7 @@ int main(const int argc, const char *argv[]) {
   int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
   for (int i = 0; i < num_threads; ++i) {
     actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, nullptr,nullptr));
+        DelegateClient, db, &wl, total_ops / num_threads, nullptr));
   }
   assert((int)actual_ops.size() == num_threads);
 
@@ -103,7 +101,10 @@ int main(const int argc, const char *argv[]) {
   }
   cout << "# Loading records:\t" << sum << endl;
 
-  sleep(60);
+  #define SLEEP_TIME 60
+  #define OPERATION_TIME 500
+
+  sleep(SLEEP_TIME);
 
   // Peforms transactions
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
@@ -111,28 +112,55 @@ int main(const int argc, const char *argv[]) {
   vector<double> total_latency;
   total_latency.reserve(total_ops);
 
-  vector<double> tail_latency(num_threads);
+  vector<double> sec_latency;
+  vector<vector<double> > tail_latency(num_threads);
+
+  vector<int> ltc_ptr(num_threads);
+  priority_queue<pair<double,int> > ltc_pq;
+
   sum = 0;
-  while( sum < total_ops ) {
+
+  for( int op_time = 0; op_time < OPERATION_TIME; ++op_time) {
     actual_ops.clear();
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, 0, &tail_latency[i],&total_latency));
+          DelegateClient, db, &wl, 0, &tail_latency[i]));
     }
     assert((int)actual_ops.size() == num_threads);
 
+    int ops = 0;
+
     for (int i = 0; i < num_threads; ++i) {
       assert(actual_ops[i].valid());
-      int ops = actual_ops[i].get();
-      sum += ops;
-      cout << "# Doing transactions:\tsum: " << sum << "\tops: " << ops << "\ttail_latency: " << tail_latency[i] << " ms" << endl;
-      cerr << ops << '\t' << tail_latency[i] << endl;
+      ops += actual_ops[i].get();
+      assert(tail_latency[i].size());
+      ltc_ptr[i] = 0;
+      ltc_pq.emplace(tail_latency[i][0],i);
     }
+    sum += ops;
+
+    while(!ltc_pq.empty()) {
+      auto now = ltc_pq.top();
+      ltc_pq.pop();
+      sec_latency.push_back(now.first);
+      total_latency.push_back(now.first);
+      ++ltc_ptr[now.second];
+      if(ltc_ptr[now.second] < (int)tail_latency[now.second].size()) {
+        ltc_pq.emplace(tail_latency[now.second][ltc_ptr[now.second]],now.second);
+      } else {
+        tail_latency[now.second].clear();
+      }
+    }
+
+    cout << "# Doing transactions:\tsum: " << sum << "\tops: " << ops << "\ttail_latency: " << sec_latency[ops*0.01] << " ms" << endl;
+    cerr << ops << '\t' << sec_latency[ops*0.01] << endl;
+
+    sec_latency.clear();
   }
 
-  sort(total_latency.begin(),total_latency.end());
-  cout << "Total tail latency: " << total_latency[total_latency.size()*0.99] << endl;
-  cerr << total_latency[total_latency.size()*0.99] << endl;
+  sort(total_latency.begin(),total_latency.end(),greater<double>());
+  cout << "Total tail latency: " << total_latency[total_latency.size()*0.01] << "ms" << endl;
+  cerr << total_latency[total_latency.size()*0.01] << endl;
   return 0;
 }
 
