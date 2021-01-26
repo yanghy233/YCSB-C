@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../rocksdb -L./
+CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../CruiseDB -L./
 LDFLAGS= -lpthread -lrocksdb -ldl -lz
 ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz
 SILKFLAGS= -lpthread -lrocksdbsilk -ldl -lz
@@ -37,6 +37,7 @@ clean:
 		$(MAKE) -C $$dir $@; \
 	done
 	$(RM) $(EXEC)
-	$(RM) -rf rocksdb_test
+	$(RM) -r rocksdb_test
+	$(RM) /home/ljk/ramdisk/*
 
 .PHONY: $(SUBDIRS) $(EXEC) ORIGINEXEC SILKDIR SILKEXEC origin silk clean

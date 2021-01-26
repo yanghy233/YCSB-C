@@ -10,20 +10,18 @@
 using namespace rocksdb;
 
 namespace ycsbc{
-static std::vector<ColumnFamilyDescriptor> column_families;
+// static std::vector<ColumnFamilyDescriptor> column_families;
 
 RocksDB::RocksDB()
     {
-// #ifndef SILK
-//     options.rate_limiter.reset(NewGenericRateLimiter(400<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
-// #endif
-    // std::string ram_path="/home/ubuntu/ramdisk";
+    // options.rate_limiter.reset(NewGenericRateLimiter(300<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
+    std::string ram_path="/home/ljk/ramdisk";
     std::string disk_path="./rocksdb_test";
-    options.max_write_buffer_number = 24;
+    // options.max_write_buffer_number = 24;
     //options.min_write_buffer_number_to_merge = 4;
     // options.level0_file_num_compaction_trigger = 1;
-    // options.db_paths.emplace_back(ram_path,1ull<<30);
-    // options.db_paths.emplace_back(disk_path,1ull<<40);
+    options.db_paths.emplace_back(ram_path,2ull<<30);
+    options.db_paths.emplace_back(disk_path,1ull<<40);
 
     options.create_if_missing = true;
     Status s=rocksdb::DB::Open(options,disk_path,&db);
@@ -59,6 +57,12 @@ RocksDB::~RocksDB()
     delete cf;
     delete db;
     }
+
+void RocksDB::Begin(int code) {
+    Status s=db->TbBegin(cf,code);
+    assert(s.ok());
+    return;
+}
 
 int RocksDB::Read (const std::string &table,const std::string &key,const std::vector<std::string> *fields,std::vector<KVPair> &result)
     {
@@ -96,7 +100,8 @@ int RocksDB::Scan(const std::string &table, const std::string &key,int record_co
     for(it->Seek(key);it->Valid()&&cnt<record_count;it->Next())
         {
         std::vector<KVPair> tmp;
-        deserializeValues(it->value().data(), fields, tmp);
+        std::string values =it->value().data();
+        deserializeValues(values, fields, tmp);
         result.push_back(tmp);
         ++cnt;
         }
@@ -115,7 +120,8 @@ int RocksDB::Update(const std::string &table,const std::string &key,std::vector<
         }
     ColumnFamilyHandle* cf=handles[table];
     mu.unlock(); */
-    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
+    std::string sval=serializeValues(values);
+    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(sval));
     return s.code();
     // if(handles.find(table)==handles.end())
     //     {
@@ -147,7 +153,8 @@ int RocksDB::Insert(const std::string &table, const std::string &key,std::vector
         }
     ColumnFamilyHandle* cf=handles[table];
     mu.unlock(); */
-    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(values)));
+    std::string sval=serializeValues(values);
+    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(sval));
     return s.code();
     }
 
@@ -172,6 +179,7 @@ void RocksDB::deserializeValues(const std::string &values,const std::vector<std:
     for(auto pos=values.find(' ');pos!=std::string::npos;)
         {
         auto next=values.find(' ',pos+1);
+        if(next==std::string::npos)break;
         std::string tmp=values.substr(pos+1,next-pos-1);
         bool flag=fields?false:true;
         for(unsigned i=0;!flag&&i<fields->size();++i)

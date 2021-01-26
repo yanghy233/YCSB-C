@@ -24,12 +24,13 @@ class DB {
   /// Initializes any state for accessing this DB.
   /// Called once per DB client (thread); there is a single DB instance globally.
   ///
-  virtual void Init() { }
+  virtual void Init(int thread_idx) { }
   ///
   /// Clears any state for accessing this DB.
   /// Called once per DB client (thread); there is a single DB instance globally.
   ///
   virtual void Close() { }
+  virtual void Begin(int code) { }
   ///
   /// Reads a record from the database.
   /// Field/value pairs from the result are stored in a vector.

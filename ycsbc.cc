@@ -43,8 +43,8 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 //   return oks;
 // }
 
-int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, vector<double> *tail_latency) {
-  db->Init();
+int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, int thread_idx, const int load_ops, vector<double> *tail_latency) {
+  db->Init(thread_idx);
   ycsbc::Client client(*db, *wl);
   int oks = 0;
   if (load_ops) {
@@ -58,13 +58,14 @@ int DelegateClient(ycsbc::DB *db, ycsbc::CoreWorkload *wl, const int load_ops, v
       timer.Start();
       int ok = client.DoTransaction();
       double t = timer.End();
+      if (t > 1000) t=1000;
       oks += ok;
-      if (ok) {
+      if (tail_latency && ok) {
         tail_latency->push_back(t);
       }
       last_time += t;
     }
-    sort(tail_latency->begin(), tail_latency->end(), greater<double>());
+    if (tail_latency) sort(tail_latency->begin(), tail_latency->end(), greater<double>());
   }
   db->Close();
   return oks;
@@ -88,9 +89,10 @@ int main(const int argc, const char *argv[]) {
   // Loads data
   vector<future<int>> actual_ops;
   int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
+  cout << "# Loading records!" << endl;
   for (int i = 0; i < num_threads; ++i) {
     actual_ops.emplace_back(async(launch::async,
-        DelegateClient, db, &wl, total_ops / num_threads, nullptr));
+        DelegateClient, db, &wl, i, total_ops / num_threads, nullptr));
   }
   assert((int)actual_ops.size() == num_threads);
 
@@ -99,14 +101,34 @@ int main(const int argc, const char *argv[]) {
     assert(n.valid());
     sum += n.get();
   }
-  cout << "# Loading records:\t" << sum << endl;
+  cout << "# Records loaded:\t" << sum << endl;
 
   #define SLEEP_TIME 60
+  #define PREPARE_TIME 100
   #define OPERATION_TIME 500
 
   sleep(SLEEP_TIME);
 
+  //Prepares
+  db->Begin(1);
+  for( int op_time = 0; op_time < PREPARE_TIME; ++op_time) {
+    actual_ops.clear();
+    for (int i = 0; i < num_threads; ++i) {
+      actual_ops.emplace_back(async(launch::async,
+          DelegateClient, db, &wl, i, 0, nullptr));
+    }
+    assert((int)actual_ops.size() == num_threads);
+    for (int i = 0; i < num_threads; ++i) {
+      assert(actual_ops[i].valid());
+    }
+    if(op_time%10==0) cout << "# Preparing : " << op_time << " seconds" << endl;
+  }
+  cout << "# Prepared!" << endl;
+
+  sleep (SLEEP_TIME);
+
   // Peforms transactions
+  db->Begin(2);
   total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
   
   vector<double> total_latency;
@@ -120,11 +142,12 @@ int main(const int argc, const char *argv[]) {
 
   sum = 0;
 
-  for( int op_time = 0; op_time < OPERATION_TIME; ++op_time) {
+for( int op_time = 0; op_time < OPERATION_TIME; ++op_time) {
+  // while(sum<total_ops) {
     actual_ops.clear();
     for (int i = 0; i < num_threads; ++i) {
       actual_ops.emplace_back(async(launch::async,
-          DelegateClient, db, &wl, 0, &tail_latency[i]));
+          DelegateClient, db, &wl, i, 0, &tail_latency[i]));
     }
     assert((int)actual_ops.size() == num_threads);
 
@@ -160,7 +183,10 @@ int main(const int argc, const char *argv[]) {
 
   sort(total_latency.begin(),total_latency.end(),greater<double>());
   cout << "Total tail latency: " << total_latency[total_latency.size()*0.01] << "ms" << endl;
-  cerr << total_latency[total_latency.size()*0.01] << endl;
+  cerr << "99\t" << total_latency[total_latency.size()*0.01] << endl;
+
+  delete db;
+
   return 0;
 }
 

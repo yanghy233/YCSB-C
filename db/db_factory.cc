@@ -15,6 +15,7 @@
 // #include "db/tbb_rand_db.h"
 // #include "db/tbb_scan_db.h"
 #include "db/rocks_db.h"
+// #include "db/faster.h"
 
 using namespace std;
 using ycsbc::DB;
@@ -35,5 +36,7 @@ DB* DBFactory::CreateDB(utils::Properties &props) {
   //   return new TbbScanDB;
   } else if (props["dbname"] == "rocksdb") {
     return new RocksDB;
+  // } else if (props["dbname"] == "faster") {
+  //   return new Faster;
   } else return NULL;
 }

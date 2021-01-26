@@ -23,6 +23,7 @@ namespace ycsbc {
 class RocksDB : public DB {
  public:
   RocksDB();
+  void Begin(int code);
   int Read(const std::string &table, const std::string &key,
            const std::vector<std::string> *fields,
            std::vector<KVPair> &result);
@@ -42,7 +43,7 @@ class RocksDB : public DB {
   // std::mutex mu;
   rocksdb::ColumnFamilyHandle* cf;
   void deserializeValues(const std::string &values,const std::vector<std::string> *fields,std::vector<KVPair> &result);
-  void updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values);
+  //void updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values);
   std::string serializeValues(const std::vector<KVPair> &values);
 };
 

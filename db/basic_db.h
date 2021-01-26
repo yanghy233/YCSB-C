@@ -23,7 +23,7 @@ namespace ycsbc {
 
 class BasicDB : public DB {
  public:
-  void Init() {
+  void Init(int thread_idx) {
     std::lock_guard<std::mutex> lock(mutex_);
     cout << "A new thread begins working." << endl;
   }
