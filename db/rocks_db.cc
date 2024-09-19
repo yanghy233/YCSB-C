@@ -15,8 +15,8 @@ namespace ycsbc{
 RocksDB::RocksDB()
     {
     // options.rate_limiter.reset(NewGenericRateLimiter(300<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
-    std::string ram_path="/home/ljk/ramdisk";
-    std::string disk_path="./rocksdb_test";
+    std::string ram_path="/home/yanghy/ramdisk";
+    std::string disk_path="./rocksdb_test_tmp";
     // options.max_write_buffer_number = 24;
     //options.min_write_buffer_number_to_merge = 4;
     // options.level0_file_num_compaction_trigger = 1;

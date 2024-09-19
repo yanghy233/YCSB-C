@@ -1,3 +1,4 @@
+rocksdb_test_tmp/
 # Compiled Object files
 *.slo
 *.lo
