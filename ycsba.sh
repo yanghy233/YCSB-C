@@ -1,8 +1,6 @@
 #!/bin/bash
 
-rm ycsba.log
-
-for i in $(seq 0 4)
-	do
-	./ycsbc -db rocksdb -threads 100 -P workloads/a${i}.spec 1>res/a${i}.out 2>res/a${i}.txt
-done
+rm -rf ./res ./ramdisk_path ./rocksdb_disk_path
+mkdir res ramdisk_path rocksdb_disk_path
+# only for insert benchmark
+./ycsbc -db rocksdb -threads 100 -P workloads/a0.spec 1>res/a0.out 2>res/a0.txt

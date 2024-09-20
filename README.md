@@ -29,3 +29,9 @@ Note that we do not have load and run commands as the original YCSB. Specify
 how many records to load by the recordcount property. Reference properties
 files in the workloads dir.
 
+## 使用方法
+```
+cd YCSB-C
+mkdir ramdisk_path rocksdb_disk_path
+./ycsba.sh
+```

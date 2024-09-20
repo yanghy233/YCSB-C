@@ -1,3 +1,7 @@
+ramdisk_path/
+rocksdb_disk_path/
+ramdisk_tmp/
+ramdisk/
 rocksdb_test_tmp/
 # Compiled Object files
 *.slo

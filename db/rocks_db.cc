@@ -15,13 +15,18 @@ namespace ycsbc{
 RocksDB::RocksDB()
     {
     // options.rate_limiter.reset(NewGenericRateLimiter(300<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
-    std::string ram_path="/home/yanghy/ramdisk";
-    std::string disk_path="./rocksdb_test_tmp";
+  
+    std::string ram_path="./ramdisk_path";           // for ram
+    std::string disk_path="./rocksdb_disk_path";     // for disk
+  
     // options.max_write_buffer_number = 24;
     //options.min_write_buffer_number_to_merge = 4;
     // options.level0_file_num_compaction_trigger = 1;
-    options.db_paths.emplace_back(ram_path,2ull<<30);
-    options.db_paths.emplace_back(disk_path,1ull<<40);
+  
+    // db_paths: control the storage position of SST files 
+    // TODO @yhy db_paths.size() should >= 2, also db_paths can emplace back the same path (eg. disk_path push twice) 
+    options.db_paths.emplace_back(ram_path,2ull<<30);   // 2GB
+    options.db_paths.emplace_back(disk_path,1ull<<40);  // 1TB
 
     options.create_if_missing = true;
     Status s=rocksdb::DB::Open(options,disk_path,&db);
