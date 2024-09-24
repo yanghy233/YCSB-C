@@ -45,7 +45,8 @@ if you want to use Rocksdb, you should modify db/rocks_db.cc
 ```
 then recompile the project.
 
-## Before compile Rocksdb or CruiseDB
+## Before compile YCSB-C
+Note that you should compile and install Rocksdb or CruiseDB first
 ```shell
 cd rocksdb # or cd cruisedb
 make static_lib share_lib DEBUG_LEVEL=0 -j$(nproc)
