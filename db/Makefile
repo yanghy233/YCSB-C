@@ -1,7 +1,8 @@
 CC=g++
 CFLAGS=-std=c++11 -c -g -Wall -fgnu-tm
 
-INCLUDES=-I../ -I../../CruiseDB/include/
+#INCLUDES=-I../ -I../../CruiseDB/include/
+INCLUDES=-I../ -I/usr/local/include/rocksdb
 SOURCES=rocks_db.cc db_factory.cc
 OBJECTS=$(SOURCES:.cc=.o)
 

@@ -9,6 +9,7 @@
 #ifndef YCSB_C_DB_H_
 #define YCSB_C_DB_H_
 
+#include <utility>
 #include <vector>
 #include <string>
 
@@ -17,6 +18,7 @@ namespace ycsbc {
     class DB {
     private:
         int thread_idx_;
+        std::string db_type_;
     public:
         typedef std::pair<std::string, std::string> KVPair;
         static const int kOK = 0;
@@ -38,6 +40,15 @@ namespace ycsbc {
         virtual void Close() {}
 
         virtual void Begin(int code) {}
+
+        // separate rocksdb and cruisedb
+        virtual void SetDbType(std::string db_type) {
+            db_type_ = std::move(db_type);
+        }
+
+        virtual std::string DbType() {
+            return db_type_;
+        }
 
         ///
         /// Reads a record from the database.

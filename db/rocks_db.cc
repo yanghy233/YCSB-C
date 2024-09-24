@@ -43,8 +43,11 @@ namespace ycsbc {
     }
 
     void RocksDB::Begin(int code) {
-        Status s = db_->TbBegin(cf_, code);
-        assert(s.ok());
+        // TODO @yhy add more db_type
+        if (DbType() == "cruisedb") {
+            Status s = db_->TbBegin(cf_, code);
+            assert(s.ok());
+        }
     }
 
     int RocksDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,

@@ -1,7 +1,9 @@
 CC=g++
-CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../CruiseDB -L./
-LDFLAGS= -lpthread -lrocksdb -ldl -lz  -lzstd -lsnappy -lbz2 -llz4
-ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz -lzstd -lsnappy -lbz2 -llz4
+#CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../CruiseDB -L./
+CFLAGS=-std=c++11 -g -Wall -pthread -I./ -I/usr/local/include/rocksdb -L/usr/local/lib
+LDFLAGS= -lpthread -lrocksdb -ldl -lz -lzstd -lsnappy -lbz2 -llz4
+#ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz -lzstd -lsnappy -lbz2 -llz4
+# silk: another version of rocksdb
 SILKFLAGS= -lpthread -lrocksdbsilk -ldl -lz -lzstd -lsnappy -lbz2 -llz4
 SUBDIRS=core db
 SILKDIRS=db
@@ -38,6 +40,6 @@ clean:
 	done
 	$(RM) $(EXEC)
 	$(RM) -r rocksdb_test
-	$(RM) /home/ljk/ramdisk/*
+	$(RM) -rf ./ramdisk_path ./rocksdb_disk_path
 
 .PHONY: $(SUBDIRS) $(EXEC) ORIGINEXEC SILKDIR SILKEXEC origin silk clean

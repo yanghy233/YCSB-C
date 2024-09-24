@@ -20,7 +20,7 @@ for i in $(seq 1 10)
 			echo $k1 $k2 >> input
 			echo $k1 $k2 >> input
 			more input >> para.log
-			./ycsbc -db rocksdb -threads 100 -P workloads/workloadtest.spec <input 1>para_res/${k1}_${k2}.out 2>para_res/${k1}_${k2}.txt 
+			./ycsbc -db cruisedb -threads 100 -P workloads/workloadtest.spec <input 1>para_res/${k1}_${k2}.out 2>para_res/${k1}_${k2}.txt
 	done
 done
 

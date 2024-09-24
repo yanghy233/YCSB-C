@@ -19,7 +19,8 @@ mkdir ramdisk_path rocksdb_disk_path
 Run Workload A with a Rocksdb -based
 implementation of the database, for example:
 ```
-./ycsbc -db rocksdb -threads 32 -P workloads/workloada.spec 1>res/w1.out 2>res/w1.txt
+./ycsbc -db cruisedb -threads 100 -P workloads/workloada.spec 1>res/w1.out 2>res/w1.txt
+./ycsbc -db rocksdb -threads 100 -P workloads/workloada.spec 1>res/w1.out 2>res/w1.txt
 ```
 
 Also reference run.sh and run\_redis.sh for the command line. See help by
@@ -31,4 +32,7 @@ files in the workloads dir.
 
 ## Supported Databases
 - CruiseDB
+- RocksDB
 
+Note that CruiseDB and Rocksdb will be install in the same directory(/usr),
+so you should only install one of them or remove the other one.

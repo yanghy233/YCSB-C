@@ -16,7 +16,7 @@ for i in $(seq 1 8)
 	echo $i >> input
 	more input
 	more input >> mem.log
-	./ycsbc -db rocksdb -threads 100 -P workloads/workloadtest.spec <input 1>mem_res/${i}.out 2>mem_res/${i}.txt 
+	./ycsbc -db cruisedb -threads 100 -P workloads/workloadtest.spec <input 1>mem_res/${i}.out 2>mem_res/${i}.txt
 done
 
 rm input

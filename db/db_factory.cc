@@ -23,7 +23,9 @@ using ycsbc::DBFactory;
 
 DB* DBFactory::CreateDB(utils::Properties &props) {
   if (props["dbname"] == "basic") {
-    return new BasicDB;
+      return new BasicDB;
+  } else if (props["dbname"] == "cruisedb") {
+      return new RocksDB;
   // } else if (props["dbname"] == "lock_stl") {
   //   return new LockStlDB;
   // } else if (props["dbname"] == "redis") {
