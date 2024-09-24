@@ -16,7 +16,7 @@ mkdir ramdisk_path rocksdb_disk_path ycsb-leveldb
 ./ycsba.sh
 ```
 
-use the following command to get the max physical thread count of your systems.
+Use the following command to get the max physical thread count of your systems.
 ```shell
 echo $(nproc)
 ```
@@ -43,12 +43,12 @@ Note that CruiseDB and Rocksdb will be install in the same directory(/usr),
 so you should only install one of them or remove the other one.
 
 ## Note for Rocksdb
-if you want to use Rocksdb, you should modify db/rocks_db.cc
+If you want to use Rocksdb, you should modify db/rocks_db.cc
 ```c++
 //  Status s = db_->TbBegin(cf_, code);
 //  assert(s.ok());
 ```
-then recompile the project.
+Then recompile the project.
 
 ## Before compile YCSB-C
 Note that if you want to test Rocksdb or CruiseDB,
