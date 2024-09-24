@@ -36,3 +36,19 @@ files in the workloads dir.
 
 Note that CruiseDB and Rocksdb will be install in the same directory(/usr),
 so you should only install one of them or remove the other one.
+
+## Note for Rocksdb
+if you want to use Rocksdb, you should modify db/rocks_db.cc
+```c++
+//  Status s = db_->TbBegin(cf_, code);
+//  assert(s.ok());
+```
+then recompile the project.
+
+## Before compile Rocksdb or CruiseDB
+```shell
+cd rocksdb # or cd cruisedb
+make static_lib share_lib DEBUG_LEVEL=0 -j$(nproc)
+sudo DEBUG_LEVEL=0 make uninstall
+sudo DEBUG_LEVEL=0 make install
+```
