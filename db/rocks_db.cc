@@ -2,218 +2,114 @@
 //  rocks_db.cc
 //  YCSB-C
 //
-//  Created by Junkai Liang on 9/19/19.
-//
 
 #include "rocks_db.h"
 
 using namespace rocksdb;
 
-namespace ycsbc{
+namespace ycsbc {
 // static std::vector<ColumnFamilyDescriptor> column_families;
 
-RocksDB::RocksDB()
-    {
-    // options.rate_limiter.reset(NewGenericRateLimiter(300<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
-  
-    std::string ram_path="./ramdisk_path";           // for ram
-    std::string disk_path="./rocksdb_disk_path";     // for disk
-  
-    // options.max_write_buffer_number = 24;
-    //options.min_write_buffer_number_to_merge = 4;
-    // options.level0_file_num_compaction_trigger = 1;
-  
-    // db_paths: control the storage position of SST files 
-    // TODO @yhy db_paths.size() should >= 2, also db_paths can emplace back the same path (eg. disk_path push twice) 
-    options.db_paths.emplace_back(ram_path,2ull<<30);   // 2GB
-    options.db_paths.emplace_back(disk_path,1ull<<40);  // 1TB
+/**
+ * open and create a new rocksdb instance
+ * create a new column family named "usertable"
+ */
+    RocksDB::RocksDB() {
+        // options_.rate_limiter.reset(NewGenericRateLimiter(300<<20,100*1000,10,RateLimiter::Mode::kWritesOnly,true));
 
-    options.create_if_missing = true;
-    Status s=rocksdb::DB::Open(options,disk_path,&db);
-    assert(s.ok());
+        std::string ram_path = "./ramdisk_path";           // for ram
+        std::string disk_path = "./rocksdb_disk_path";     // for disk
 
-    s = db->CreateColumnFamily(ColumnFamilyOptions(options),"usertable", &cf);
-    assert(s.ok());
-/*     if(column_families.size())
-        {
-        std::vector<ColumnFamilyHandle*> cf_handles;
-        Status s=rocksdb::DB::Open(options,disk_path,column_families,&cf_handles,&db);
+        // options_.max_write_buffer_number = 24;
+        //options_.min_write_buffer_number_to_merge = 4;
+        // options_.level0_file_num_compaction_trigger = 1;
+
+        // db_paths: control the storage position of SST files
+        // TODO @yhy db_paths.size() should >= 2, also db_paths can emplace back the same path (eg. disk_path push twice)
+        options_.db_paths.emplace_back(ram_path, 2ull << 30);   // 2GB
+        options_.db_paths.emplace_back(disk_path, 1ull << 40);  // 1TB
+
+        options_.create_if_missing = true;
+        Status s = rocksdb::DB::Open(options_, disk_path, &db_);
         assert(s.ok());
-        for(unsigned i=1;i<cf_handles.size();++i)
-            handles[column_families[i].name]=cf_handles[i];
-        }
-    else
-        {
-        options.create_if_missing=true;
-        Status s=rocksdb::DB::Open(options,disk_path,&db);
+
+        s = db_->CreateColumnFamily(ColumnFamilyOptions(options_), "usertable", &cf_);
         assert(s.ok());
-        } */
     }
 
-RocksDB::~RocksDB()
-    {
-/*     column_families.clear();
-    column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions(options));
-    for(const auto &handle : handles)
-        {
-        column_families.emplace_back(handle.first,ColumnFamilyOptions(options));
-        delete handle.second;
-        } */
-    delete cf;
-    delete db;
+    RocksDB::~RocksDB() {
+        delete cf_;
+        delete db_;
     }
 
-void RocksDB::Begin(int code) {
-    Status s=db->TbBegin(cf,code);
-    assert(s.ok());
-    return;
-}
-
-int RocksDB::Read (const std::string &table,const std::string &key,const std::vector<std::string> *fields,std::vector<KVPair> &result)
-    {
-/*     mu.lock();
-    if(handles.find(table)==handles.end())
-        {
-        ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
+    void RocksDB::Begin(int code) {
+        Status s = db_->TbBegin(cf_, code);
         assert(s.ok());
-        handles[table]=cf;
-        }
-    ColumnFamilyHandle* cf=handles[table];
-    mu.unlock(); */
-    std::string values;
-    Status s=db->Get(ReadOptions(),cf,Slice(key),&values);
-    if(!s.ok())return s.code();
-    deserializeValues(values, fields, result);
-    return 0;
     }
 
-int RocksDB::Scan(const std::string &table, const std::string &key,int record_count, const std::vector<std::string> *fields,std::vector<std::vector<KVPair>> &result)
-    {
-/*     mu.lock();
-    if(handles.find(table)==handles.end())
-        {
-        ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
-        assert(s.ok());
-        handles[table]=cf;
-        }
-    ColumnFamilyHandle* cf=handles[table];
-    mu.unlock(); */
-    Iterator*it=db->NewIterator(ReadOptions(),cf);
-    int cnt=0;
-    for(it->Seek(key);it->Valid()&&cnt<record_count;it->Next())
-        {
-        std::vector<KVPair> tmp;
-        std::string values =it->value().data();
-        deserializeValues(values, fields, tmp);
-        result.push_back(tmp);
-        ++cnt;
-        }
-    int ret=it->status().code();
-    delete it;
-    return ret;
+    int RocksDB::Read(const std::string &table, const std::string &key, const std::vector<std::string> *fields,
+                      std::vector<KVPair> &result) {
+        std::string values;
+        Status s = db_->Get(ReadOptions(), cf_, Slice(key), &values);
+        if (!s.ok())return s.code();
+        deserializeValues(values, fields, result);
+        return 0;
     }
 
-int RocksDB::Update(const std::string &table,const std::string &key,std::vector<KVPair> &values)
-    {
-/*     mu.lock();
-    if(handles.find(table)==handles.end())
-        {
-        mu.unlock();
-        return Status::kNotFound;
+    int RocksDB::Scan(const std::string &table, const std::string &key, int record_count,
+                      const std::vector<std::string> *fields, std::vector<std::vector<KVPair>> &result) {
+        Iterator *it = db_->NewIterator(ReadOptions(), cf_);
+        int cnt = 0;
+        for (it->Seek(key); it->Valid() && cnt < record_count; it->Next()) {
+            std::vector<KVPair> tmp;
+            std::string values = it->value().data();
+            deserializeValues(values, fields, tmp);
+            result.push_back(tmp);
+            ++cnt;
         }
-    ColumnFamilyHandle* cf=handles[table];
-    mu.unlock(); */
-    std::string sval=serializeValues(values);
-    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(sval));
-    return s.code();
-    // if(handles.find(table)==handles.end())
-    //     {
-    //     ColumnFamilyHandle* cf;
-    //     Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
-    //     assert(s.ok());
-    //     handles[table]=cf;
-    //     }
-    // ColumnFamilyHandle* cf=handles[table];
-    // std::string oldvalues;
-    // Status s=db->Get(ReadOptions(),cf,Slice(key),&oldvalues);
-    // if(!s.ok())return s.code();
-    // std::vector<KVPair> result;
-    // deserializeValues(oldvalues, NULL, result);
-    // updateValues(result,values);
-    // s=db->Put(WriteOptions(),cf,Slice(key),Slice(serializeValues(result)));
-    // return s.code();
+        int ret = it->status().code();
+        delete it;
+        return ret;
     }
 
-int RocksDB::Insert(const std::string &table, const std::string &key,std::vector<KVPair> &values)
-    {
-/*     mu.lock();
-    if(handles.find(table)==handles.end())
-        {
-        ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
-        assert(s.ok());
-        handles[table]=cf;
-        }
-    ColumnFamilyHandle* cf=handles[table];
-    mu.unlock(); */
-    std::string sval=serializeValues(values);
-    Status s=db->Put(WriteOptions(),cf,Slice(key),Slice(sval));
-    return s.code();
+    int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
+        std::string sval = serializeValues(values);
+        Status s = db_->Put(WriteOptions(), cf_, Slice(key), Slice(sval));
+        return s.code();
     }
 
-int RocksDB::Delete(const std::string &table, const std::string &key)
-    {
-/*     mu.lock();
-    if(handles.find(table)==handles.end())
-        {
-        ColumnFamilyHandle* cf;
-        Status s = db->CreateColumnFamily(ColumnFamilyOptions(options),table, &cf);
-        assert(s.ok());
-        handles[table]=cf;
-        }
-    ColumnFamilyHandle* cf=handles[table];
-    mu.unlock(); */
-    Status s=db->Delete(WriteOptions(),cf,Slice(key));
-    return s.code();
+    int RocksDB::Insert(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
+        std::string sval = serializeValues(values);
+        Status s = db_->Put(WriteOptions(), cf_, Slice(key), Slice(sval));
+        return s.code();
     }
 
-void RocksDB::deserializeValues(const std::string &values,const std::vector<std::string> *fields,std::vector<KVPair> &result)
-    {
-    for(auto pos=values.find(' ');pos!=std::string::npos;)
-        {
-        auto next=values.find(' ',pos+1);
-        if(next==std::string::npos)break;
-        std::string tmp=values.substr(pos+1,next-pos-1);
-        bool flag=fields?false:true;
-        for(unsigned i=0;!flag&&i<fields->size();++i)
-            if(tmp==fields->at(i))
-                flag=true;
-        pos=values.find(' ',next+1);
-        if(flag)
-            result.emplace_back(tmp,values.substr(next+1,pos-next-1));
-        }
-    return;
+    int RocksDB::Delete(const std::string &table, const std::string &key) {
+        Status s = db_->Delete(WriteOptions(), cf_, Slice(key));
+        return s.code();
     }
 
-// void RocksDB::updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values)
-//     {
-//     for(unsigned i=0;i<result.size();++i)
-//         for(unsigned j=0;j<values.size();++j)
-//             if(result[i].first==values[j].first)
-//                 {
-//                 result[i].second=values[j].second;
-//                 break;
-//                 }
-//     return;
-//     }
+    void RocksDB::deserializeValues(const std::string &values, const std::vector<std::string> *fields,
+                                    std::vector<KVPair> &result) {
+        for (auto pos = values.find(' '); pos != std::string::npos;) {
+            auto next = values.find(' ', pos + 1);
+            if (next == std::string::npos)break;
+            std::string tmp = values.substr(pos + 1, next - pos - 1);
+            bool flag = fields ? false : true;
+            for (unsigned i = 0; !flag && i < fields->size(); ++i)
+                if (tmp == fields->at(i))
+                    flag = true;
+            pos = values.find(' ', next + 1);
+            if (flag)
+                result.emplace_back(tmp, values.substr(next + 1, pos - next - 1));
+        }
+    }
 
-std::string RocksDB::serializeValues(const std::vector<KVPair> &values)
-    {
-    std::string ret;
-    for(unsigned i=0;i<values.size();++i)
-        ret+=" "+values[i].first+" "+values[i].second;
-    return ret;
+
+    std::string RocksDB::serializeValues(const std::vector<KVPair> &values) {
+        std::string ret;
+        for (unsigned i = 0; i < values.size(); ++i)
+            ret += " " + values[i].first + " " + values[i].second;
+        return ret;
     }
 } // namespace ycsbc

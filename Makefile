@@ -1,8 +1,8 @@
 CC=g++
 CFLAGS=-std=c++11 -g -Wall -pthread -I./ -L../CruiseDB -L./
 LDFLAGS= -lpthread -lrocksdb -ldl -lz  -lzstd -lsnappy -lbz2 -llz4
-ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz  -lzstd -lsnappy -lbz2 -llz4
-SILKFLAGS= -lpthread -lrocksdbsilk -ldl -lz  -lzstd -lsnappy -lbz2 -llz4
+ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz -lzstd -lsnappy -lbz2 -llz4
+SILKFLAGS= -lpthread -lrocksdbsilk -ldl -lz -lzstd -lsnappy -lbz2 -llz4
 SUBDIRS=core db
 SILKDIRS=db
 SUBSRCS=$(wildcard core/*.cc) db/db_factory.cc db/rocks_db.cc

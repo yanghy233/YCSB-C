@@ -1,4 +1,5 @@
 ramdisk_path/
+.idea/
 rocksdb_disk_path/
 ramdisk_tmp/
 ramdisk/
