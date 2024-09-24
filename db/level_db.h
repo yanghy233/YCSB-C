@@ -1,27 +1,27 @@
 //
-//  rocks_db.h
-//  YCSB-C
+// Created by yanghy on 9/24/24.
 //
 
-#ifndef YCSB_C_ROCKS_DB_H_
-#define YCSB_C_ROCKS_DB_H_
+#ifndef YCSB_C_LEVEL_DB_H
+#define YCSB_C_LEVEL_DB_H
 
-#include "core/db.h"
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/rate_limiter.h"
+#include <leveldb/db.h>
+#include <leveldb/options.h>
+#include <leveldb/status.h>
+#include <leveldb/cache.h>
+#include <leveldb/filter_policy.h>
 
 #include <string>
 
+#include "core/db.h"
+
 namespace ycsbc {
 
-    class RocksDB : public DB {
+    class LevelDB : public DB {
     public:
-        RocksDB();
+        LevelDB();
 
-        void Begin(int code) override;
+        void Begin(int code) override {}
 
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
@@ -39,22 +39,20 @@ namespace ycsbc {
 
         int Delete(const std::string &table, const std::string &key) override;
 
-        ~RocksDB() override;
+        ~LevelDB() override;
 
     private:
-        rocksdb::DB *db_;
-        rocksdb::Options options_;
-        // std::unordered_map<std::string,rocksdb::ColumnFamilyHandle*> handles;
-        // std::mutex mu;
-        rocksdb::ColumnFamilyHandle *cf_;
+        leveldb::DB *db_{};
+        leveldb::Options options_;
 
-        void deserializeValues(const std::string &values, const std::vector<std::string> *fields,
+        static void deserializeValues(const std::string &values, const std::vector<std::string> *fields,
                                std::vector<KVPair> &result);
 
         //void updateValues(std::vector<KVPair> &result ,const std::vector<KVPair> &values);
-        std::string serializeValues(const std::vector<KVPair> &values);
+        static std::string serializeValues(const std::vector<KVPair> &values);
     };
 
 } // ycsbc
 
-#endif // YCSB_C_ROCKS_DB_H_
+
+#endif //YCSB_C_LEVEL_DB_H

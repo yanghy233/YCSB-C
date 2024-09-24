@@ -193,7 +193,7 @@ int main(const int argc, const char *argv[]) {
         }
 
         cout << fixed << setprecision(2)
-             << "[YCSB run] " << current_time++ << "sec, total: " << sum << " , ops: " << ops << ", tail_latency(ms): "
+             << "[YCSB run] " << current_time++ << " sec, total: " << sum << " , ops: " << ops << ", tail_latency(ms): "
              << "Max=" << sec_latency[0]
              << ", Min=" << sec_latency[sec_latency.size() - 1]
              << ", Avg=" << sec_latency[sec_latency.size() / 2]
@@ -237,7 +237,10 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) 
     int argindex = 1;
     string filename;
     while (argindex < argc && StrStartWith(argv[argindex], "-")) {
-        if (strcmp(argv[argindex], "-threads") == 0) {
+        if (strcmp(argv[argindex], "-h") == 0) {
+            UsageMessage(argv[0]);
+            exit(0);
+        } else if (strcmp(argv[argindex], "-threads") == 0) {
             argindex++;
             if (argindex >= argc) {
                 UsageMessage(argv[0]);
@@ -296,6 +299,7 @@ string ParseCommandLine(int argc, const char *argv[], utils::Properties &props) 
             argindex++;
         } else {
             cout << "Unknown option '" << argv[argindex] << "'" << endl;
+            UsageMessage(argv[0]);
             exit(0);
         }
     }

@@ -49,7 +49,8 @@ inline Value DiscreteGenerator<Value>::Next() {
   mutex_.lock();
   double chooser = utils::RandomDouble();
   mutex_.unlock();
-  
+
+  // values_: [(insert, weight1), (read, weight2), ...]
   for (auto p = values_.cbegin(); p != values_.cend(); ++p) {
     if (chooser < p->second / sum_) {
       return last_ = p->first;

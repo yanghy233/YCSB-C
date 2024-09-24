@@ -15,30 +15,33 @@
 // #include "db/tbb_rand_db.h"
 // #include "db/tbb_scan_db.h"
 #include "db/rocks_db.h"
+#include "db/level_db.h"
 // #include "db/faster.h"
 
 using namespace std;
 using ycsbc::DB;
 using ycsbc::DBFactory;
 
-DB* DBFactory::CreateDB(utils::Properties &props) {
-  if (props["dbname"] == "basic") {
-      return new BasicDB;
-  } else if (props["dbname"] == "cruisedb") {
-      return new RocksDB;
-  // } else if (props["dbname"] == "lock_stl") {
-  //   return new LockStlDB;
-  // } else if (props["dbname"] == "redis") {
-  //   int port = stoi(props["port"]);
-  //   int slaves = stoi(props["slaves"]);
-  //   return new RedisDB(props["host"].c_str(), port, slaves);
-  // } else if (props["dbname"] == "tbb_rand") {
-  //   return new TbbRandDB;
-  // } else if (props["dbname"] == "tbb_scan") {
-  //   return new TbbScanDB;
-  } else if (props["dbname"] == "rocksdb") {
-    return new RocksDB;
-  // } else if (props["dbname"] == "faster") {
-  //   return new Faster;
-  } else return NULL;
+DB *DBFactory::CreateDB(utils::Properties &props) {
+    if (props["dbname"] == "basic") {
+        return new BasicDB;
+    } else if (props["dbname"] == "leveldb") {
+        return new LevelDB;
+    } else if (props["dbname"] == "cruisedb") {
+        return new RocksDB;
+        // } else if (props["dbname"] == "lock_stl") {
+        //   return new LockStlDB;
+        // } else if (props["dbname"] == "redis") {
+        //   int port = stoi(props["port"]);
+        //   int slaves = stoi(props["slaves"]);
+        //   return new RedisDB(props["host"].c_str(), port, slaves);
+        // } else if (props["dbname"] == "tbb_rand") {
+        //   return new TbbRandDB;
+        // } else if (props["dbname"] == "tbb_scan") {
+        //   return new TbbScanDB;
+    } else if (props["dbname"] == "rocksdb") {
+        return new RocksDB;
+        // } else if (props["dbname"] == "faster") {
+        //   return new Faster;
+    } else return NULL;
 }
