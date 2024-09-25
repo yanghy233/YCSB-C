@@ -107,27 +107,7 @@ int main(const int argc, const char *argv[]) {
     db->Begin(1);     // just for prepare rocksdb tokenBucket
 
     if (db->DbType() == "cruisedb") {
-
-        const int SLEEP_TIME = 60;
-        const int PREPARE_TIME = 100;
-
-        sleep(SLEEP_TIME);
-
-        //Prepares
-        for (int op_time = 0; op_time < PREPARE_TIME; ++op_time) {
-            worker_threads.clear();
-            for (int i = 0; i < num_threads; ++i) {
-                worker_threads.emplace_back(async(launch::async,
-                                                  DelegateClient, db, &wl, i, 0, nullptr));
-            }
-            assert((int) worker_threads.size() == num_threads);
-            for (int i = 0; i < num_threads; ++i) {
-                assert(worker_threads[i].valid());
-            }
-            if (op_time % 10 == 0) cout << "[YCSB] Preparing : " << op_time << " seconds" << endl;
-        }
-        cout << "[YCSB] Prepared!" << endl;
-
+        const int SLEEP_TIME = 30;
         sleep(SLEEP_TIME);
     }
 
