@@ -103,18 +103,20 @@ int main(const int argc, const char *argv[]) {
     cout << "[YCSB load] Records finish loaded:\t" << sum << endl;
 
     /////////////////////////////////////////////////////////////////////
-
-    db->Begin(1);     // just for prepare rocksdb tokenBucket
-
     if (db->DbType() == "cruisedb") {
-        const int SLEEP_TIME = 30;
-        sleep(SLEEP_TIME);
+        db->Begin(1);     // just for prepare rocksdb tokenBucket
+      
+       // sleep 目的：等待后台compaction完成，尽可能清空内存的情况下在开始流量控制
+       // 防止冷启动问题的发生
+       const int SLEEP_TIME = 120;
+       sleep(SLEEP_TIME);
+    
+       db->Begin(2);
     }
 
     /////////////////////////////////////////////////////////////////////////
 
     // Running Stage
-    db->Begin(2);
     int current_time = 0;
     total_ops = stoi(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
 
