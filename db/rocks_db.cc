@@ -83,8 +83,37 @@ namespace ycsbc {
     }
 
     int RocksDB::Update(const std::string &table, const std::string &key, std::vector<KVPair> &values) {
-        std::string sval = serializeValues(values);
-        Status s = db_->Put(WriteOptions(), cf_, Slice(key), Slice(sval));
+        // Read the existing value
+        std::string v1;
+        Status s = db_->Get(ReadOptions(), cf_, Slice(key), &v1);
+        if (!s.ok()) {
+            return s.code(); // Return error code if the key does not exist
+        }
+
+        // Deserialize the existing value
+        std::vector<KVPair> existing_values;
+        deserializeValues(v1, nullptr, existing_values);
+
+        // Update the existing values with the new values
+        for (const auto &new_value : values) {
+            bool found = false;
+            for (auto &existing_value : existing_values) {
+                if (existing_value.first == new_value.first) {
+                    existing_value.second = new_value.second;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                existing_values.push_back(new_value);
+            }
+        }
+
+        // Serialize the updated values
+        std::string updated_value = serializeValues(existing_values);
+
+        // Write the updated value back to the database
+        s = db_->Put(WriteOptions(), cf_, Slice(key), Slice(updated_value));
         return s.code();
     }
 

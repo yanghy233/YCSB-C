@@ -62,7 +62,7 @@ int ycsbc::LevelDB::Update(const std::string &table, const std::string &key, std
     // update
     data.clear();
     data = serializeValues(values);
-    s = db_->Put(leveldb::WriteOptions(), key, data);
+    db_->Put(leveldb::WriteOptions(), key, data);
     return DB::kOK;
 }
 
