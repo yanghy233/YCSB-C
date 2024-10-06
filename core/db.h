@@ -41,6 +41,8 @@ namespace ycsbc {
 
         virtual void Begin(int code) {}
 
+        virtual void End() {}
+
         // separate rocksdb and cruisedb
         virtual void SetDbType(std::string db_type) {
             db_type_ = std::move(db_type);

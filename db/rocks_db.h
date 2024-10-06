@@ -23,6 +23,8 @@ namespace ycsbc {
 
         void Begin(int code) override;
 
+        void End() override;
+
         int Read(const std::string &table, const std::string &key,
                  const std::vector<std::string> *fields,
                  std::vector<KVPair> &result) override;

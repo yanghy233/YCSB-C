@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <unistd.h>
 #include <iomanip>
+#include <thread>
 #include "core/utils.h"
 #include "core/timer.h"
 #include "core/client.h"
@@ -90,7 +91,7 @@ int main(const int argc, const char *argv[]) {
         if (i == num_threads - 1) {
             load_ops_per_thread = total_ops - load_ops_per_thread * i;
         }
-        worker_threads.emplace_back(async(launch::async,
+        worker_threads.emplace_back(std::async(launch::async,
                                           DelegateClient, db, &wl, i, load_ops_per_thread, nullptr));
     }
     assert((int) worker_threads.size() == num_threads);
@@ -108,8 +109,8 @@ int main(const int argc, const char *argv[]) {
       
        // sleep 目的：等待后台compaction完成，尽可能清空内存的情况下在开始流量控制
        // 防止冷启动问题的发生
-       const int SLEEP_TIME = 120;
-       sleep(SLEEP_TIME);
+//       const int SLEEP_TIME = 120;
+//       sleep(SLEEP_TIME);
     
        db->Begin(2);
     }
@@ -138,10 +139,26 @@ int main(const int argc, const char *argv[]) {
 
     sum = 0;
 
+    // A background thread for debug
+    //std::cout << "start a background thread for debug.." << std::endl;
+    //std::atomic<int> finish{0};
+    //std::future<void> f1;
+    //if (db->DbType() == "cruisedb") {
+    //    f1 = std::async(std::launch::async, [&]() {
+    //        while (true) {
+    //            std::this_thread::sleep_for(std::chrono::seconds(5));
+    //            db->End();
+    //            if (finish == 1) {
+    //                break;
+    //            }
+    //        }
+    //    });
+    //}
+
     while (sum < total_ops) {
         worker_threads.clear();
         for (int i = 0; i < num_threads; ++i) {
-            worker_threads.emplace_back(async(launch::async,
+            worker_threads.emplace_back(std::async(launch::async,
                                               DelegateClient, db, &wl, i, 0, &tail_latency[i]));
         }
         assert((int) worker_threads.size() == num_threads);
@@ -209,6 +226,12 @@ int main(const int argc, const char *argv[]) {
          << total_latency[total_latency.size() * 0.001] << "ms" << endl;
     cout << fixed << setprecision(2) << "[YCSB] Total tail latency(99.99%): "
          << total_latency[total_latency.size() * 0.0001] << "ms" << endl;
+
+    // A background thread for debug
+    //if (db->DbType() == "cruisedb") {
+    //    finish = 1;
+    //    f1.get();
+    //}
 
     delete db;
 

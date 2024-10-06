@@ -4,6 +4,7 @@
 //
 
 #include "rocks_db.h"
+#include <iostream>
 
 using namespace rocksdb;
 
@@ -29,6 +30,12 @@ namespace ycsbc {
         options_.db_paths.emplace_back(ram_path, 2ull << 30);   // 2GB
         options_.db_paths.emplace_back(disk_path, 1ull << 40);  // 1TB
 
+        // debug
+//        options_.max_bytes_for_level_base = 1024 * 10; // 1KB
+//        options_.max_bytes_for_level_multiplier = 3;
+        // L0 无穷大
+        // options_.level0_file_num_compaction_trigger = INT32_MAX;
+            
         options_.create_if_missing = true;
         Status s = rocksdb::DB::Open(options_, disk_path, &db_);
         assert(s.ok());
@@ -114,5 +121,18 @@ namespace ycsbc {
         for (unsigned i = 0; i < values.size(); ++i)
             ret += " " + values[i].first + " " + values[i].second;
         return ret;
+    }
+
+    void RocksDB::End() {
+        // Debug 获取每层文件数量
+        for (int i = 0; i < 7; ++i) {
+            std::string property;
+            bool status = db_->GetProperty(cf_, "rocksdb.num-files-at-level" + std::to_string(i), &property);
+            if (status) {
+                std::cout << "Level " << i << " file count: " << property << std::endl;
+            } else {
+                std::cerr << "Error getting property for level " << i << std::endl;
+            }
+        }
     }
 } // namespace ycsbc
