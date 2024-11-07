@@ -37,9 +37,14 @@ namespace ycsbc {
         // options_.level0_file_num_compaction_trigger = INT32_MAX;
             
         options_.create_if_missing = true;
+       
+        // 是否开启统计信息
+        // options_.statistics = CreateDBStatistics();
+
         Status s = rocksdb::DB::Open(options_, disk_path, &db_);
         assert(s.ok());
 
+        std::cout << "[YCSB-C] start to create new CF: usertable\n";
         s = db_->CreateColumnFamily(ColumnFamilyOptions(options_), "usertable", &cf_);
         assert(s.ok());
     }
@@ -52,8 +57,8 @@ namespace ycsbc {
     void RocksDB::Begin(int code) {
         // TODO @yhy add more db_type
         if (DbType() == "cruisedb") {
-            Status s = db_->TbBegin(cf_, code);
-            assert(s.ok());
+//            Status s = db_->TbBegin(cf_, code);
+//            assert(s.ok());
         }
     }
 

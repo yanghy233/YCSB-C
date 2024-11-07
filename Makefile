@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-std=c++11 -g -Wall -pthread -I./ -I/usr/local/include/rocksdb -I/usr/local/include/leveldb
-LDFLAGS= -lpthread -lrocksdb -lleveldb -ldl -lz -lzstd -lsnappy -lbz2 -llz4
+CFLAGS=-std=c++17 -g -Wall -pthread -I./ -I/usr/local/include/rocksdb -I/usr/local/include/leveldb
+LDFLAGS= -lpthread -lrocksdb -lleveldb -ldl -lz -lzstd -lsnappy -lbz2 -llz4 -luring
 
 #ORIGINFLAGS= -lpthread -lrocksdborigin -ldl -lz -lzstd -lsnappy -lbz2 -llz4
 # silk: another version of rocksdb

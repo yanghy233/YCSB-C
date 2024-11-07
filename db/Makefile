@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -c -g -Wall -fgnu-tm
+CFLAGS=-std=c++17 -c -g -Wall -fgnu-tm
 
 INCLUDES=-I../ -I/usr/local/include/rocksdb -I/usr/local/include/leveldb/
 SOURCES=rocks_db.cc db_factory.cc level_db.cc

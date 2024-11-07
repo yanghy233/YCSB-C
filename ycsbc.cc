@@ -82,6 +82,17 @@ int main(const int argc, const char *argv[]) {
 
     db->SetDbType(props.GetProperty("dbname"));
 
+    if (db->DbType() == "cruisedb") {
+        db->Begin(1);     // just for prepare rocksdb tokenBucket
+
+        // sleep 目的：等待后台compaction完成，尽可能清空内存的情况下在开始流量控制
+        // 防止冷启动问题的发生
+        //     const int SLEEP_TIME = 150;
+        //     sleep(SLEEP_TIME);
+
+        db->Begin(2);
+    }
+
     // Loading Stage
     vector<future<int>> worker_threads;
     int total_ops = stoi(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
@@ -106,16 +117,17 @@ int main(const int argc, const char *argv[]) {
     /////////////////////////////////////////////////////////////////////
     if (db->DbType() == "cruisedb") {
         db->Begin(1);     // just for prepare rocksdb tokenBucket
-      
-       // sleep 目的：等待后台compaction完成，尽可能清空内存的情况下在开始流量控制
-       // 防止冷启动问题的发生
-//       const int SLEEP_TIME = 120;
+//
+//       // sleep 目的：等待后台compaction完成，尽可能清空内存的情况下在开始流量控制
+//       // 防止冷启动问题的发生
+//       const int SLEEP_TIME = 150;
 //       sleep(SLEEP_TIME);
-    
+//
        db->Begin(2);
     }
 
     /////////////////////////////////////////////////////////////////////////
+    
 
     // Running Stage
     int current_time = 0;
